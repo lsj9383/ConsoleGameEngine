@@ -7,12 +7,16 @@ namespace GameEngineApp
 {
     class GameEngine
     {
-        int rate_ = 60;
+        int rate_ = 100;
         int width_ = 0;
         int height_ = 0;
         List<char[]> video_memory = new List<char[]>();
         Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
         Dictionary<string, List<GameObject>> tag_game_objects = new Dictionary<string, List<GameObject>>();
+        List<GameObject> wait_add_game_objects = new List<GameObject>();
+
+        bool exit_ = false;
+        bool run_ = false;
 
 
         static GameEngine instance = new GameEngine();
@@ -77,8 +81,13 @@ namespace GameEngineApp
             return this;
         }
 
-        public GameEngine AddGameObject(GameObject go)
+        public GameEngine AddGameObject(GameObject go, bool force = false)
         {
+            if (run_ && !force)
+            {
+                wait_add_game_objects.Add(go);
+                return this;
+            }
             game_objects.Add(go.GetID(), go);
             if (!tag_game_objects.ContainsKey(go.GetTag()))
             {
@@ -100,16 +109,32 @@ namespace GameEngineApp
                 video_memory.Add(new char[width_ + 1]);
             }
 
+            foreach (KeyValuePair<int, GameObject> kv in game_objects)
+            {
+                kv.Value.Start();
+            }
+
+            run_ = true;
+
             int now = DateTime.Now.Millisecond;
 
-            while (true)
+
+            while (!exit_)
             {
                 int last = now;
                 now = DateTime.Now.Millisecond;
                 Update(now - last);
                 Draw();
+
+                foreach (GameObject go in wait_add_game_objects) {
+                    AddGameObject(go, true);
+                }
+                wait_add_game_objects.Clear();
+
                 Thread.Sleep(1000 / rate_);
             }
+
+            OnApplicationQuit();
         }
 
         void ClearVideoMemory()
@@ -157,6 +182,23 @@ namespace GameEngineApp
             {
                 kv.Value.Update(delta);
             }
+        }
+
+        void OnApplicationQuit() {
+            foreach (KeyValuePair<int, GameObject> kv in game_objects)
+            {
+                kv.Value.OnApplicationQuit();
+            }
+        }
+
+        public void Exit()
+        {
+            exit_ = true;
+        }
+
+        public bool IsExit()
+        {
+            return exit_;
         }
     }
 }

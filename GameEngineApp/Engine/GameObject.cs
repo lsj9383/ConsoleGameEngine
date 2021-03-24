@@ -26,9 +26,11 @@ namespace GameEngineApp
             return id_;
         }
 
-        public virtual void Update(int delta) { }
-        public virtual void Start() { }
-        public virtual void Awake() { }
         public virtual ScreenPoint[] GetScreenPoints() { return null; }
+
+        public virtual void Awake() { }
+        public virtual void Start() { }
+        public virtual void Update(int delta) { }
+        public virtual void OnApplicationQuit() { }
     }
 }
